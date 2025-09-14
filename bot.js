@@ -18,6 +18,16 @@ const client = new Client({
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
+// ★★★ rule.mdを起動時に読み込む ★★★
+let ruleMarkdown;
+try {
+  ruleMarkdown = fs.readFileSync('rule.md', 'utf8');
+} catch (error) {
+  console.error('rule.mdの読み込みに失敗しました:', error);
+  // ファイルが読めなくてもボットは起動させるが、ルールに関する機能は使えなくなる
+  ruleMarkdown = 'ルールのファイルが読めなかったんだな。ごめんなさいなんだな。';
+}
+
 // ボット起動時の処理
 client.once('clientReady', () => {
   console.log(`${client.user.tag}としてログインしました！AI Agent Hackathonサーバーを盛り上げます！`);
@@ -31,9 +41,6 @@ client.on('messageCreate', async (message) => {
     try {
       const userMessage = message.content.replace(/<@!?\\d+>/, '').trim();
       await message.channel.sendTyping();
-
-      // ★★★ rule.mdを読み込む ★★★
-      const ruleMarkdown = fs.readFileSync('rule.md', 'utf8');
 
       const prompt = `
         あなたは、ハッカソンの大将として知られるゼンなんだな。
