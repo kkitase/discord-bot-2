@@ -80,16 +80,35 @@ client.on('messageCreate', async (message) => {
     const replies = ['お疲れ様です！素晴らしいものが出来上がってきていますね！', '少し休憩しましょう！コーヒーでもいかがですか？', '大丈夫、あなたは一人じゃありませんよ！'];
     message.channel.send(replies[Math.floor(Math.random() * replies.length)]);
   }
+  // ★★★ ここからが新しいロジック ★★★
   if (Math.random() < 0.5) {
     try {
+      // ★★★ 絵文字リアクション (既存のロジック) ★★★
       const reactionEmojis = ['👍', '🎉', '🔥', '🚀', '🤩', '💯', '👏', '✨', '🤖', '💪'];
       const shuffledEmojis = reactionEmojis.sort(() => 0.5 - Math.random());
       const reactionsToAdd = Math.floor(Math.random() * 4) + 2;
       for (let i = 0; i < reactionsToAdd && i < shuffledEmojis.length; i++) {
         await message.react(shuffledEmojis[i]);
       }
+
+      // ★★★ Geminiを使った相槌 (新しいロジック) ★★★
+      await message.channel.sendTyping();
+      const prompt = `
+        あなたは、ハッカソンの大将として知られるゼンなんだな。
+        みんなの会話を温かく見守っているんだな。
+        以下のメッセージに対して、何か気の利いた、短い、応援するような相槌を打ってほしいんだな。
+        長文じゃなくて、一言二言でいいんだな。
+
+        メッセージ：
+        "${message.content}"
+      `;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      await message.channel.send(text);
+
     } catch (error) {
-      console.error('リアクションの追加に失敗しました:', error);
+      console.error('ランダムリアクションまたは相槌の送信に失敗しました:', error);
     }
   }
 });
