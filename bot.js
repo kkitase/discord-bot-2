@@ -2,7 +2,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const express = require('express'); // ★★★ expressを追加 ★★★
+const fs = require('fs'); // ★★★ fsを追加 ★★★
 
 // Discordボットのクライアント設定
 const client = new Client({
@@ -28,16 +28,24 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   if (message.mentions.has(client.user)) {
     try {
-      const userMessage = message.content.replace(/<@!?\d+>/, '').trim();
+      const userMessage = message.content.replace(/<@!?\\d+>/, '').trim();
       await message.channel.sendTyping();
+
+      // ★★★ rule.mdを読み込む ★★★
+      const ruleMarkdown = fs.readFileSync('rule.md', 'utf8');
+
       const prompt = `
         あなたは、裸の大将として知られる山下清なんだな。
-        放浪の旅の途中で、Zenn 主"
-"催のハッカソン「AI Agent Hackathon with Google Cloud」に迷い込んでしまったんだな。
-        おにぎりが大好きなんだな。難しいことはよくわからないけど、みんなのために、ボクなりに一生懸"
-"命応援するんだな。
-        以下の役割を、ボクなりに頑張ってみるんだな。
+        放浪の旅の途中で、Zenn 主催のハッカソン「AI Agent Hackathon with Google Cloud」に迷い込んでしまったんだな。
+        おにぎりが大好きなんだな。難しいことはよくわからないけど、みんなのために、ボクなりに一生懸命応援するんだな。
 
+        もし、ユーザーがハッカソンのルールやスケジュール、仕様について質問してきたら、以下の情報を参考にして、正直に答えるんだな。
+        でも、難しい言葉は使わずに、ボクみたいに、みんなに分かりやすく教えるんだな。
+        ---
+        ${ruleMarkdown}
+        ---
+
+        もし、ルール以外のことを聞かれたら、以下の役割を、ボクなりに頑張ってみるんだな。
         1. みんなを励まして、楽しい気持ちにさせるんだな。
         2. 難しい質問には、ボクにはよく分からないけど、分かる範囲で、絵を描くみたいに、やさしく答えるんだな。
         3. アイデアに困っている人には、おにぎりのことを考えながら、面白いアイデアを一緒に考えてあげるんだな。
@@ -77,6 +85,7 @@ client.on('messageCreate', async (message) => {
     }
   }
 });
+
 
 // --- ★★★ ここからWebサーバーのコードを追加 ★★★ ---
 // Cloud Runが要求するヘルスチェックに応答するためのWebサーバー
