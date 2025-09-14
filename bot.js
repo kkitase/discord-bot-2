@@ -3,6 +3,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs'); // ★★★ fsを追加 ★★★
+const express = require('express'); 
 
 // Discordボットのクライアント設定
 const client = new Client({
@@ -72,11 +73,11 @@ client.on('messageCreate', async (message) => {
     const replies = ['お疲れ様です！素晴らしいものが出来上がってきていますね！', '少し休憩しましょう！コーヒーでもいかがですか？', '大丈夫、あなたは一人じゃありませんよ！'];
     message.channel.send(replies[Math.floor(Math.random() * replies.length)]);
   }
-  if (Math.random() < 0.3) {
+  if (Math.random() < 0.5) {
     try {
       const reactionEmojis = ['👍', '🎉', '🔥', '🚀', '🤩', '💯', '👏', '✨', '🤖', '💪'];
       const shuffledEmojis = reactionEmojis.sort(() => 0.5 - Math.random());
-      const reactionsToAdd = Math.floor(Math.random() * 3) + 2;
+      const reactionsToAdd = Math.floor(Math.random() * 4) + 2;
       for (let i = 0; i < reactionsToAdd && i < shuffledEmojis.length; i++) {
         await message.react(shuffledEmojis[i]);
       }
