@@ -2,7 +2,7 @@
 require("dotenv").config();
 const { Client, GatewayIntentBits } = require("discord.js");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const fs = require("fs"); // ★★★ fsを追加 ★★★
+const fs = require("fs");
 const express = require("express");
 
 // Discordボットのクライアント設定
@@ -11,7 +11,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers, // ★★★ これを追加 ★★★
+    GatewayIntentBits.GuildMembers, 
   ],
 });
 
@@ -63,7 +63,8 @@ client.on("messageCreate", async (message) => {
         新しい仲間が自己紹介をしてくれたんだな。
         以下の自己紹介メッセージに対して、温かく、歓迎の気持ちを込めた、気の利いた返信をしてほしいんだな。
         ユーモアを交えて、相手がハッピーになるような、最高の返事を頼むんだな。
-
+        【一番大事なこと】話が長くならないように、3行くらいで短くまとめるんだな。
+        
         自己紹介メッセージ：
         "${message.content}"
       `;
@@ -103,6 +104,7 @@ client.on("messageCreate", async (message) => {
         4. いつも正直に、思ったままを話すんだな。
         5. 【一番大事なこと】話が長くならないように、3行くらいで短くまとめるんだな。
         この設定で、次のメッセージに返事をしてほしいんだな。
+
         ユーザーのメッセージ: "${userMessage}"
       `;
       const result = await model.generateContent(prompt);
@@ -167,7 +169,7 @@ client.on("messageCreate", async (message) => {
 const app = express();
 const port = process.env.PORT || 8080; // Cloud Runから提供されるポート、またはデフォルト8080
 
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   // ヘルスチェック用のエンドポイント: Cloud RunなどがこのURLにアクセスして、ボットが正常に起動しているかを確認します。
   res.send("Discord bot is running and healthy!");
 });
