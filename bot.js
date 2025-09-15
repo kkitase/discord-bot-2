@@ -11,7 +11,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers, 
+    GatewayIntentBits.GuildMembers,
   ],
 });
 
@@ -29,11 +29,60 @@ try {
   ruleMarkdown = "ルールのファイルが読めなかったんだな。ごめんなさいなんだな。";
 }
 
+// --- ★★★ ここからリマインダー機能のコード ★★★ ---
+
+// リマインダーを最後に送信した日付を記録する変数
+let lastReminderSentDate = null;
+
+/**
+ * スケジュールをチャンネルにリマインドする関数
+ */
+async function sendScheduleReminder() {
+  try {
+    // 指定されたチャンネルIDからチャンネルオブジェクトを取得
+    const channel = await client.channels.fetch('1359765660305068112');
+    if (!channel) {
+      console.error('リマインダー用のチャンネルが見つかりません。');
+      return;
+    }
+
+    // rule.mdを読み込み、正規表現で「スケジュール」セクションを抽出
+    const ruleContent = fs.readFileSync('rule.md', 'utf8');
+    const scheduleRegex = /## スケジュール([\s\S]*?)(?=\n## |$)/;
+    const match = ruleContent.match(scheduleRegex);
+
+    if (match && match[1]) {
+      // 送信するメッセージを作成
+      const scheduleMessage = `ゼンだぞ！みんな、今日のハッカソンのスケジュールをお知らせするんだな！\n\n## スケジュール\n${match[1].trim()}`;
+      await channel.send(scheduleMessage);
+      console.log('スケジュールリマインダーを送信しました。');
+    } else {
+      console.log('rule.mdからスケジュールが見つかりませんでした。');
+    }
+  } catch (error) {
+    console.error('スケジュールリマインダーの送信に失敗しました:', error);
+  }
+}
+// --- ★★★ リマインダー機能のコードここまで ★★★ ---
+
 // ボット起動時の処理
 client.once("clientReady", () => {
   console.log(
     `${client.user.tag}としてログインしました！AI Agent Hackathonサーバーを盛り上げます！`,
   );
+
+  // --- ★★★ ここからリマインダーの定期実行処理 ★★★ ---
+  // 1時間ごとに、今日のリマインダーがまだ送信されていなければ送信する
+  setInterval(() => {
+    const today = new Date().toLocaleDateString();
+    // 日付が変わっており、まだ今日の通知を送っていなければ実行
+    if (lastReminderSentDate !== today) {
+      console.log('本日まだリマインダーを送信していません。送信を試みます。');
+      sendScheduleReminder();
+      lastReminderSentDate = today; // 送信済みフラグとして今日の日付を記録
+    }
+  }, 3600000); // 1時間 = 3600000ミリ秒
+  // --- ★★★ 定期実行処理ここまで ★★★ ---
 });
 
 // ★★★ 新規メンバー参加時の処理 ★★★
@@ -181,3 +230,4 @@ app.listen(port, () => {
 
 // Discordにログイン
 client.login(process.env.DISCORD_BOT_TOKEN);
+
