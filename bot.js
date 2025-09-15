@@ -1,9 +1,9 @@
 // ライブラリのインポート
-require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const fs = require('fs'); // ★★★ fsを追加 ★★★
-const express = require('express'); 
+require("dotenv").config();
+const { Client, GatewayIntentBits } = require("discord.js");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const fs = require("fs"); // ★★★ fsを追加 ★★★
+const express = require("express");
 
 // Discordボットのクライアント設定
 const client = new Client({
@@ -22,21 +22,23 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 // ★★★ rule.mdを起動時に読み込む ★★★
 let ruleMarkdown;
 try {
-  ruleMarkdown = fs.readFileSync('rule.md', 'utf8');
+  ruleMarkdown = fs.readFileSync("rule.md", "utf8");
 } catch (error) {
-  console.error('rule.mdの読み込みに失敗しました:', error);
+  console.error("rule.mdの読み込みに失敗しました:", error);
   // ファイルが読めなくてもボットは起動させるが、ルールに関する機能は使えなくなる
-  ruleMarkdown = 'ルールのファイルが読めなかったんだな。ごめんなさいなんだな。';
+  ruleMarkdown = "ルールのファイルが読めなかったんだな。ごめんなさいなんだな。";
 }
 
 // ボット起動時の処理
-client.once('clientReady', () => {
-  console.log(`${client.user.tag}としてログインしました！AI Agent Hackathonサーバーを盛り上げます！`);
+client.once("clientReady", () => {
+  console.log(
+    `${client.user.tag}としてログインしました！AI Agent Hackathonサーバーを盛り上げます！`,
+  );
 });
 
 // ★★★ 新規メンバー参加時の処理 ★★★
-client.on('guildMemberAdd', member => {
-  const channelId = '1361945715072438323';
+client.on("guildMemberAdd", (member) => {
+  const channelId = "1361945715072438323";
   const channel = member.guild.channels.cache.get(channelId);
   if (!channel) {
     console.error(`チャンネル ID ${channelId} が見つかりません。`);
@@ -48,12 +50,12 @@ client.on('guildMemberAdd', member => {
 });
 
 // メッセージ受信時の処理
-client.on('messageCreate', async (message) => {
+client.on("messageCreate", async (message) => {
   // ( ... メッセージ処理のコードは変更なし ... )
-  if (message.author.bot && message.author.id !== '1413098291272618045') return;
+  if (message.author.bot && message.author.id !== "1413098291272618045") return;
 
   // ★★★ 自己紹介への返信 ★★★
-  if (message.channel.id === '1413109378877493338') {
+  if (message.channel.id === "1413109378877493338") {
     try {
       await message.channel.sendTyping();
       const prompt = `
@@ -70,9 +72,9 @@ client.on('messageCreate', async (message) => {
       const text = response.text();
       await message.reply(text);
     } catch (error) {
-      console.error('自己紹介への返信生成に失敗しました:', error);
+      console.error("自己紹介への返信生成に失敗しました:", error);
       // エラーが起きても、何か一言返しておく
-      message.reply('はじめましてなんだな！これからよろしく頼むんだな！');
+      message.reply("はじめましてなんだな！これからよろしく頼むんだな！");
     }
     // 自己紹介に返信したので、以降の処理はしない
     return;
@@ -80,7 +82,7 @@ client.on('messageCreate', async (message) => {
 
   if (message.mentions.has(client.user)) {
     try {
-      const userMessage = message.content.replace(/<@!?\\d+>/, '').trim();
+      const userMessage = message.content.replace(/<@!?\\d+>/, "").trim();
       await message.channel.sendTyping();
 
       const prompt = `
@@ -94,7 +96,6 @@ client.on('messageCreate', async (message) => {
         ---
         ${ruleMarkdown}
         ---
-
         もし、ルール以外のことを聞かれたら、以下の役割を、ボクなりに頑張ってみるんだな。
         1. みんなを励まして、楽しい気持ちにさせるんだな。
         2. 難しい質問には、ボクにはよく分からないけど、分かる範囲で、絵を描くみたいに、やさしく答えるんだな。
@@ -109,8 +110,10 @@ client.on('messageCreate', async (message) => {
       const text = response.text();
       await message.reply(text);
     } catch (error) {
-      console.error('Gemini APIとの連携でエラーが発生しました:', error);
-      message.reply('ごめんなさい、AIの頭が少し混乱しているみたいです。もう一度試してみてください。');
+      console.error("Gemini APIとの連携でエラーが発生しました:", error);
+      message.reply(
+        "ごめんなさい、AIの頭が少し混乱しているみたいです。もう一度試してみてください。",
+      );
     }
     return;
   }
@@ -120,7 +123,18 @@ client.on('messageCreate', async (message) => {
     // 50%の確率で絵文字リアクション、50%の確率で相槌メッセージ
     if (Math.random() < 0.5) {
       // ★★★ 絵文字リアクション ★★★
-      const reactionEmojis = ['👍', '🎉', '🔥', '🚀', '🤩', '💯', '👏', '✨', '🤖', '💪'];
+      const reactionEmojis = [
+        "👍",
+        "🎉",
+        "🔥",
+        "🚀",
+        "🤩",
+        "💯",
+        "👏",
+        "✨",
+        "🤖",
+        "💪",
+      ];
       const shuffledEmojis = reactionEmojis.sort(() => 0.5 - Math.random());
       const reactionsToAdd = Math.floor(Math.random() * 4) + 2;
       for (let i = 0; i < reactionsToAdd && i < shuffledEmojis.length; i++) {
@@ -144,10 +158,9 @@ client.on('messageCreate', async (message) => {
       await message.channel.send(text);
     }
   } catch (error) {
-    console.error('ランダムリアクションまたは相槌の送信に失敗しました:', error);
+    console.error("ランダムリアクションまたは相槌の送信に失敗しました:", error);
   }
 });
-
 
 // --- ★★★ ここからWebサーバーのコードを追加 ★★★ ---
 // Cloud Runが要求するヘルスチェックに応答するためのWebサーバー
@@ -155,8 +168,8 @@ const app = express();
 const port = process.env.PORT || 8080; // Cloud Runから提供されるポート、またはデフォルト8080
 
 app.get('/', (req, res) => {
-  // ヘルスチェック用のエンドポイント
-  res.send('Discord bot is running and healthy!');
+  // ヘルスチェック用のエンドポイント: Cloud RunなどがこのURLにアクセスして、ボットが正常に起動しているかを確認します。
+  res.send("Discord bot is running and healthy!");
 });
 
 app.listen(port, () => {
