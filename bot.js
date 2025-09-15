@@ -11,6 +11,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers, // ★★★ これを追加 ★★★
   ],
 });
 
@@ -33,10 +34,50 @@ client.once('clientReady', () => {
   console.log(`${client.user.tag}としてログインしました！AI Agent Hackathonサーバーを盛り上げます！`);
 });
 
+// ★★★ 新規メンバー参加時の処理 ★★★
+client.on('guildMemberAdd', member => {
+  const channelId = '1361945715072438323';
+  const channel = member.guild.channels.cache.get(channelId);
+  if (!channel) {
+    console.error(`チャンネル ID ${channelId} が見つかりません。`);
+    return;
+  }
+
+  const welcomeMessage = `ようこそ、<@${member.id}>さん！このハッカソンは、みんなで力を合わせるお祭りなんだな。分からないことがあったら、何でも聞いてくれよな！`;
+  channel.send(welcomeMessage);
+});
+
 // メッセージ受信時の処理
 client.on('messageCreate', async (message) => {
   // ( ... メッセージ処理のコードは変更なし ... )
-  if (message.author.bot) return;
+  if (message.author.bot && message.author.id !== '1413098291272618045') return;
+
+  // ★★★ 自己紹介への返信 ★★★
+  if (message.channel.id === '1413109378877493338') {
+    try {
+      await message.channel.sendTyping();
+      const prompt = `
+        あなたは、ハッカソンの大将として知られるゼンなんだな。
+        新しい仲間が自己紹介をしてくれたんだな。
+        以下の自己紹介メッセージに対して、温かく、歓迎の気持ちを込めた、気の利いた返信をしてほしいんだな。
+        ユーモアを交えて、相手がハッピーになるような、最高の返事を頼むんだな。
+
+        自己紹介メッセージ：
+        "${message.content}"
+      `;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      await message.reply(text);
+    } catch (error) {
+      console.error('自己紹介への返信生成に失敗しました:', error);
+      // エラーが起きても、何か一言返しておく
+      message.reply('はじめましてなんだな！これからよろしく頼むんだな！');
+    }
+    // 自己紹介に返信したので、以降の処理はしない
+    return;
+  }
+
   if (message.mentions.has(client.user)) {
     try {
       const userMessage = message.content.replace(/<@!?\\d+>/, '').trim();
@@ -73,25 +114,20 @@ client.on('messageCreate', async (message) => {
     }
     return;
   }
-  if (message.content === 'こんにちは') {
-    message.channel.send('こんにちは！ハッカソン楽しんでますか？');
-  }
-  if (message.content.includes('疲れた')) {
-    const replies = ['お疲れ様です！素晴らしいものが出来上がってきていますね！', '少し休憩しましょう！コーヒーでもいかがですか？', '大丈夫、あなたは一人じゃありませんよ！'];
-    message.channel.send(replies[Math.floor(Math.random() * replies.length)]);
-  }
+
   // ★★★ ここからが新しいロジック ★★★
-  if (Math.random() < 0.5) {
-    try {
-      // ★★★ 絵文字リアクション (既存のロジック) ★★★
+  try {
+    // 50%の確率で絵文字リアクション、50%の確率で相槌メッセージ
+    if (Math.random() < 0.5) {
+      // ★★★ 絵文字リアクション ★★★
       const reactionEmojis = ['👍', '🎉', '🔥', '🚀', '🤩', '💯', '👏', '✨', '🤖', '💪'];
       const shuffledEmojis = reactionEmojis.sort(() => 0.5 - Math.random());
       const reactionsToAdd = Math.floor(Math.random() * 4) + 2;
       for (let i = 0; i < reactionsToAdd && i < shuffledEmojis.length; i++) {
         await message.react(shuffledEmojis[i]);
       }
-
-      // ★★★ Geminiを使った相槌 (新しいロジック) ★★★
+    } else {
+      // ★★★ Geminiを使った相槌 ★★★
       await message.channel.sendTyping();
       const prompt = `
         あなたは、ハッカソンの大将として知られるゼンなんだな。
@@ -106,10 +142,9 @@ client.on('messageCreate', async (message) => {
       const response = await result.response;
       const text = response.text();
       await message.channel.send(text);
-
-    } catch (error) {
-      console.error('ランダムリアクションまたは相槌の送信に失敗しました:', error);
     }
+  } catch (error) {
+    console.error('ランダムリアクションまたは相槌の送信に失敗しました:', error);
   }
 });
 
