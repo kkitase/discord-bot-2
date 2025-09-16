@@ -86,7 +86,7 @@ client.once("clientReady", () => {
 });
 
 // ★★★ 新規メンバー参加時の処理 ★★★
-client.on("guildMemberAdd", (member) => {
+client.on("guildMemberAdd", async (member) => {
   const channelId = "1361945715072438323";
   const channel = member.guild.channels.cache.get(channelId);
   if (!channel) {
@@ -94,8 +94,27 @@ client.on("guildMemberAdd", (member) => {
     return;
   }
 
-  const welcomeMessage = `ようこそ、<@${member.id}>さん！このハッカソンは、みんなで力を合わせるお祭りなんだな。分からないことがあったら、何でも聞いてくれよな！`;
-  channel.send(welcomeMessage);
+  try {
+    // Geminiが応答を考えているように見せる
+    await channel.sendTyping();
+
+    const prompt = `
+      あなたは、ハッカソンの大将として知られる「ゼン」なんだな。
+      新しい仲間、<@${member.id}>さんがハッカソンに参加してくれたんだな。
+      最高の歓迎の気持ちを込めて、温かくてユーモアのあるウェルカムメッセージを考えてほしいんだな。
+      【重要】メッセージは3行以内にまとめるんだな。
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    await channel.send(text);
+  } catch (error) {
+    console.error("新規メンバー参加時のメッセージ生成に失敗しました:", error);
+    // エラーが発生した場合は、固定のメッセージを送信する
+    const welcomeMessage = `ようこそ、<@${member.id}>さん！このハッカソンは、みんなで力を合わせるお祭りなんだな。分からないことがあったら、何でも聞いてくれよな！`;
+    channel.send(welcomeMessage);
+  }
 });
 
 // メッセージ受信時の処理
@@ -198,7 +217,7 @@ client.on("messageCreate", async (message) => {
         あなたは、ハッカソンの大将として知られるゼンなんだな。
         みんなの会話を温かく見守っているんだな。
         以下のメッセージに対して、何か気の利いた、短い、応援するような相槌を打ってほしいんだな。
-        長文じゃなくて、一言二言でいいんだな。
+        【一番大事なこと】話が長くならないように、3行くらいで短くまとめるんだな。
 
         メッセージ：
         "${message.content}"
