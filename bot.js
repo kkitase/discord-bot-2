@@ -52,10 +52,34 @@ async function sendScheduleReminder() {
     const match = ruleContent.match(scheduleRegex);
 
     if (match && match[1]) {
-      // 送信するメッセージを作成
-      const scheduleMessage = `ゼンだぞ！みんな、今日のハッカソンのスケジュールをお知らせするんだな！\n\n## スケジュール\n${match[1].trim()}`;
-      await channel.send(scheduleMessage);
-      console.log('スケジュールリマインダーを送信しました。');
+      const scheduleText = match[1].trim();
+
+      try {
+        await channel.sendTyping();
+        const prompt = `
+          あなたは、ハッカソンの大将として知られる「ゼン」なんだな。
+          ハッカソンの新しい一日が始まるんだな。
+          参加者に向けて、今日のスケジュールを知らせる、元気が出るようなユニークなメッセージを考えてほしいんだな。
+          以下のスケジュール情報を必ず含めて、メッセージを作成するんだな。
+          【重要】メッセージは全体で3行くらいにまとめるんだな。
+
+          ---
+          今日のスケジュール:
+          ${scheduleText}
+          ---
+        `;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const generatedMessage = response.text();
+        await channel.send(generatedMessage);
+        console.log('Geminiによるスケジュールリマインダーを送信しました。');
+      } catch (geminiError) {
+        console.error('Geminiでのリマインダー生成に失敗しました:', geminiError);
+        // エラー時は、以前の固定メッセージを送信する
+        const scheduleMessage = `ゼンだぞ！みんな、今日のハッカソンのスケジュールをお知らせするんだな！\n\n## スケジュール\n${scheduleText}`;
+        await channel.send(scheduleMessage);
+        console.log('静的なスケジュールリマインダーを送信しました。');
+      }
     } else {
       console.log('rule.mdからスケジュールが見つかりませんでした。');
     }
@@ -63,6 +87,7 @@ async function sendScheduleReminder() {
     console.error('スケジュールリマインダーの送信に失敗しました:', error);
   }
 }
+
 // --- ★★★ リマインダー機能のコードここまで ★★★ ---
 
 // ボット起動時の処理
