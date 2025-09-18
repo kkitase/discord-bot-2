@@ -97,16 +97,22 @@ client.once("clientReady", () => {
   );
 
   // --- ★★★ ここからリマインダーの定期実行処理 ★★★ ---
-  // 1時間ごとに、今日のリマインダーがまだ送信されていなければ送信する
-  setInterval(() => {
-    const today = new Date().toLocaleDateString();
-    // 日付が変わっており、まだ今日の通知を送っていなければ実行
-    if (lastReminderSentDate !== today) {
-      console.log('本日まだリマインダーを送信していません。送信を試みます。');
-      sendScheduleReminder();
-      lastReminderSentDate = today; // 送信済みフラグとして今日の日付を記録
-    }
-  }, 3600000); // 1時間 = 3600000ミリ秒
+  // 環境変数 REMINDER_ENABLED が 'true' の場合のみ、リマインダー機能を有効にする
+  if (process.env.REMINDER_ENABLED === 'true') {
+    // 1時間ごとに、今日のリマインダーがまだ送信されていなければ送信する
+    setInterval(() => {
+      const today = new Date().toLocaleDateString();
+      // 日付が変わっており、まだ今日の通知を送っていなければ実行
+      if (lastReminderSentDate !== today) {
+        console.log('本日まだリマインダーを送信していません。送信を試みます。');
+        sendScheduleReminder();
+        lastReminderSentDate = today; // 送信済みフラグとして今日の日付を記録
+      }
+    }, 3600000); // 1時間 = 3600000ミリ秒
+    console.log('スケジュールリマインダー機能が有効です。');
+  } else {
+    console.log('スケジュールリマインダー機能は無効です。');
+  }
   // --- ★★★ 定期実行処理ここまで ★★★ ---
 });
 
