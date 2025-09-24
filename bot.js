@@ -17,7 +17,12 @@ const client = new Client({
 
 // Gemini APIのクライアント設定
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// ★★★ ボットの状態管理 ★★★
+let isMuted = false;
+let remindersEnabled = process.env.REMINDER_ENABLED === 'true';
+
 
 // ★★★ rule.mdを起動時に読み込む ★★★
 let ruleMarkdown;
@@ -33,6 +38,8 @@ try {
 
 // リマインダーを最後に送信した日付を記録する変数
 let lastReminderSentDate = null;
+let reminderInterval;
+
 
 /**
  * スケジュールをチャンネルにリマインドする関数
@@ -88,6 +95,27 @@ async function sendScheduleReminder() {
   }
 }
 
+/**
+ * リマインダーの定期実行を開始/停止する関数
+ */
+function setReminderInterval() {
+  if (remindersEnabled) {
+    if (reminderInterval) clearInterval(reminderInterval); // 既存のインターバルをクリア
+    reminderInterval = setInterval(() => {
+      const today = new Date().toLocaleDateString();
+      if (lastReminderSentDate !== today) {
+        console.log('本日まだリマインダーを送信していません。送信を試みます。');
+        sendScheduleReminder();
+        lastReminderSentDate = today;
+      }
+    }, 3600000); // 1時間
+    console.log('スケジュールリマインダー機能が有効です。');
+  } else {
+    if (reminderInterval) clearInterval(reminderInterval);
+    console.log('スケジュールリマインダー機能は無効です。');
+  }
+}
+
 // --- ★★★ リマインダー機能のコードここまで ★★★ ---
 
 // ボット起動時の処理
@@ -95,29 +123,38 @@ client.once("clientReady", () => {
   console.log(
     `${client.user.tag}としてログインしました！AI Agent Hackathonサーバーを盛り上げます！`,
   );
-
-  // --- ★★★ ここからリマインダーの定期実行処理 ★★★ ---
-  // 環境変数 REMINDER_ENABLED が 'true' の場合のみ、リマインダー機能を有効にする
-  if (process.env.REMINDER_ENABLED === 'true') {
-    // 1時間ごとに、今日のリマインダーがまだ送信されていなければ送信する
-    setInterval(() => {
-      const today = new Date().toLocaleDateString();
-      // 日付が変わっており、まだ今日の通知を送っていなければ実行
-      if (lastReminderSentDate !== today) {
-        console.log('本日まだリマインダーを送信していません。送信を試みます。');
-        sendScheduleReminder();
-        lastReminderSentDate = today; // 送信済みフラグとして今日の日付を記録
-      }
-    }, 3600000); // 1時間 = 3600000ミリ秒
-    console.log('スケジュールリマインダー機能が有効です。');
-  } else {
-    console.log('スケジュールリマインダー機能は無効です。');
-  }
-  // --- ★★★ 定期実行処理ここまで ★★★ ---
+  // リマインダーの初期設定
+  setReminderInterval();
 });
+
+// ★★★ スラッシュコマンドの処理 ★★★
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isCommand()) return;
+
+  const { commandName } = interaction;
+
+  if (commandName === 'mute') {
+    const status = interaction.options.getString('status');
+    isMuted = status === 'on';
+    await interaction.reply({
+      content: `ボットのミュートは現在 ${isMuted ? 'オン' : 'オフ'} です。`,
+      ephemeral: true // コマンド実行者のみに見えるメッセージ
+    });
+  } else if (commandName === 'reminders') {
+    const status = interaction.options.getString('status');
+    remindersEnabled = status === 'on';
+    setReminderInterval(); // 設定を即時反映
+    await interaction.reply({
+      content: `リマインダーは現在 ${remindersEnabled ? 'オン' : 'オフ'} です。`,
+      ephemeral: true
+    });
+  }
+});
+
 
 // ★★★ 新規メンバー参加時の処理 ★★★
 client.on("guildMemberAdd", async (member) => {
+  // isMutedがtrueでも、この機能は常に動作する
   const channelId = "1361945715072438323";
   const channel = member.guild.channels.cache.get(channelId);
   if (!channel) {
@@ -150,8 +187,12 @@ client.on("guildMemberAdd", async (member) => {
 
 // メッセージ受信時の処理
 client.on("messageCreate", async (message) => {
-  // ( ... メッセージ処理のコードは変更なし ... )
-  if (message.author.bot && message.author.id !== "1413098291272618045") return;
+  // ミュート中は、メンションと自己紹介以外には反応しない
+  if (isMuted && !message.mentions.has(client.user) && message.channel.id !== "1413109378877493338") {
+    return;
+  }
+  
+  if (message.author.bot) return;
 
   // ★★★ 自己紹介への返信 ★★★
   if (message.channel.id === "1413109378877493338") {
@@ -213,11 +254,14 @@ client.on("messageCreate", async (message) => {
     } catch (error) {
       console.error("Gemini APIとの連携でエラーが発生しました:", error);
       message.reply(
-        "ごめんなさい、AIの頭が少し混乱しているみたいです。もう一度試してみてください。",
+        "ごめんなさい、AIの頭が少し混乱しているみたいです。もう一度試してみてください。\nもし、ボクがミュートされていたら、メンションだけに答えるようになっているんだな。",
       );
     }
     return;
   }
+
+  // isMutedがtrueなら、相槌やリアクションは行わない
+  if (isMuted) return;
 
   // ★★★ ここからが新しいロジック ★★★
   try {

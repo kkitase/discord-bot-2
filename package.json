@@ -4,7 +4,8 @@
   "description": "",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "deploy": "node deploy-commands.js"
   },
   "author": "",
   "license": "ISC",
