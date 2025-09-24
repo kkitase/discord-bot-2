@@ -14,4 +14,3 @@ steps:
     - '--update-secrets=DISCORD_BOT_TOKEN=discord-bot-token:latest'
     - '--update-secrets=GEMINI_API_KEY=gemini-api-key:latest'
     - '--update-secrets=DISCORD_CLIENT_ID=discord-client-id:latest'
-    - '--set-env-vars=REMINDER_ENABLED=true'

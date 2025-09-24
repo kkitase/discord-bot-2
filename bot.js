@@ -21,7 +21,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // ★★★ ボットの状態管理 ★★★
 let isMuted = false;
-let remindersEnabled = process.env.REMINDER_ENABLED === 'true';
+let remindersEnabled = false; // デフォルトはオフ
 
 
 // ★★★ rule.mdを起動時に読み込む ★★★
