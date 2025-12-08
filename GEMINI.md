@@ -46,8 +46,8 @@ gcloud run deploy discord-bot-2 \
   --region asia-northeast1 \
   --no-allow-unauthenticated \
   --min-instances=1 \
-  --update-secrets=DISCORD_BOT_TOKEN=discord-bot-token:latest \
-  --update-secrets=GEMINI_API_KEY=gemini-api-key:latest
+  --update-secrets=DISCORD_BOT_TOKEN=discord-bot-2-token:latest \
+  --update-secrets=GEMINI_API_KEY=gemini-api-key-2:latest
 ```
 
 # Development Conventions
