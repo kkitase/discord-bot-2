@@ -21,7 +21,27 @@ const modelName = process.env.GEMINI_MODEL || "gemini-2.5-pro";
 const model = genAI.getGenerativeModel({ model: modelName });
 console.log(`Using Gemini model: ${modelName}`);
 
-// ★★★ ボットの状態管理 ★★★
+// ★★★ 定数定義 ★★★
+const REACTION_EMOJIS = [
+  "👍",
+  "🎉",
+  "🔥",
+  "🚀",
+  "🤩",
+  "💯",
+  "👏",
+  "✨",
+  "🤖",
+  "💪",
+];
+const REACTION_CHANCE = 0.5;
+const STATUS_UPDATES = [
+  "みんなのコードを見守り中",
+  "ハンズオンの準備運動中",
+  "質問いつでもドントコイ！",
+  "Geminiと作戦会議中",
+];
+const STATUS_ROTATION_INTERVAL = 10 * 60 * 1000; // 10分
 let isMuted = false;
 let remindersEnabled = false; // デフォルトはオフ
 
@@ -130,6 +150,15 @@ client.once("clientReady", () => {
   console.log(`${client.user.tag} としてログインしました！`);
   console.log(`参加サーバー数: ${serverCount}`);
   console.log(`参加サーバー: ${serverNames}`);
+  console.log(`参加サーバー: ${serverNames}`);
+
+  // ステータスローテーション開始
+  let statusIndex = 0;
+  setInterval(() => {
+    client.user.setActivity(STATUS_UPDATES[statusIndex]);
+    statusIndex = (statusIndex + 1) % STATUS_UPDATES.length;
+  }, STATUS_ROTATION_INTERVAL);
+
   // リマインダーの初期設定
   setReminderInterval();
 });
@@ -155,6 +184,21 @@ client.on("interactionCreate", async (interaction) => {
       content: `リマインダーは現在 ${
         remindersEnabled ? "オン" : "オフ"
       } です。`,
+      ephemeral: true,
+    });
+  } else if (commandName === "help") {
+    const helpMessage = `
+**ビリー隊長のハンズオンサポート！**
+
+使えるコマンド:
+\`/mute [on/off]\`: 反応をミュートにするか、解除するよ。
+\`/reminders [on/off]\`: スケジュールリマインダーの設定だよ。
+\`/help\`: このヘルプを表示するよ。
+
+困ったときはいつでもメンションしてね！一緒に頑張ろう！
+    `;
+    await interaction.reply({
+      content: helpMessage,
       ephemeral: true,
     });
   }
@@ -283,21 +327,9 @@ client.on("messageCreate", async (message) => {
   // ★★★ ここからが新しいロジック ★★★
   try {
     // 50%の確率で絵文字リアクション、50%の確率で相槌メッセージ
-    if (Math.random() < 0.5) {
+    if (Math.random() < REACTION_CHANCE) {
       // ★★★ 絵文字リアクション ★★★
-      const reactionEmojis = [
-        "👍",
-        "🎉",
-        "🔥",
-        "🚀",
-        "🤩",
-        "💯",
-        "👏",
-        "✨",
-        "🤖",
-        "💪",
-      ];
-      const shuffledEmojis = reactionEmojis.sort(() => 0.5 - Math.random());
+      const shuffledEmojis = REACTION_EMOJIS.sort(() => 0.5 - Math.random());
       const reactionsToAdd = Math.floor(Math.random() * 4) + 2;
       for (let i = 0; i < reactionsToAdd && i < shuffledEmojis.length; i++) {
         await message.react(shuffledEmojis[i]);
@@ -341,3 +373,13 @@ app.listen(port, () => {
 
 // Discordにログイン
 client.login(process.env.DISCORD_BOT_TOKEN);
+
+// ★★★ グレースフルシャットダウン ★★★
+const gracefulShutdown = () => {
+  console.log("Shutting down gracefully...");
+  client.destroy();
+  process.exit(0);
+};
+
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
