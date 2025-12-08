@@ -23,7 +23,6 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 let isMuted = false;
 let remindersEnabled = false; // デフォルトはオフ
 
-
 // ★★★ rule.mdを起動時に読み込む ★★★
 let ruleMarkdown;
 try {
@@ -40,21 +39,25 @@ try {
 let lastReminderSentDate = null;
 let reminderInterval;
 
-
 /**
  * スケジュールをチャンネルにリマインドする関数
  */
 async function sendScheduleReminder() {
   try {
     // 指定されたチャンネルIDからチャンネルオブジェクトを取得
-    const channel = await client.channels.fetch('1359765660305068112');
+    const channelId = process.env.DISCORD_REMINDER_CHANNEL_ID;
+    if (!channelId) {
+      console.error("リマインダー用のチャンネルIDが設定されていません。");
+      return;
+    }
+    const channel = await client.channels.fetch(channelId);
     if (!channel) {
-      console.error('リマインダー用のチャンネルが見つかりません。');
+      console.error("リマインダー用のチャンネルが見つかりません。");
       return;
     }
 
     // rule.mdを読み込み、正規表現で「スケジュール」セクションを抽出
-    const ruleContent = fs.readFileSync('rule.md', 'utf8');
+    const ruleContent = fs.readFileSync("rule.md", "utf8");
     const scheduleRegex = /## スケジュール([\s\S]*?)(?=\n## |$)/;
     const match = ruleContent.match(scheduleRegex);
 
@@ -79,19 +82,19 @@ async function sendScheduleReminder() {
         const response = await result.response;
         const generatedMessage = response.text();
         await channel.send(generatedMessage);
-        console.log('Geminiによるスケジュールリマインダーを送信しました。');
+        console.log("Geminiによるスケジュールリマインダーを送信しました。");
       } catch (geminiError) {
-        console.error('Geminiでのリマインダー生成に失敗しました:', geminiError);
+        console.error("Geminiでのリマインダー生成に失敗しました:", geminiError);
         // エラー時は、以前の固定メッセージを送信する
         const scheduleMessage = `ゼンだぞ！みんな、今日のハッカソンのスケジュールをお知らせするんだな！\n\n## スケジュール\n${scheduleText}`;
         await channel.send(scheduleMessage);
-        console.log('静的なスケジュールリマインダーを送信しました。');
+        console.log("静的なスケジュールリマインダーを送信しました。");
       }
     } else {
-      console.log('rule.mdからスケジュールが見つかりませんでした。');
+      console.log("rule.mdからスケジュールが見つかりませんでした。");
     }
   } catch (error) {
-    console.error('スケジュールリマインダーの送信に失敗しました:', error);
+    console.error("スケジュールリマインダーの送信に失敗しました:", error);
   }
 }
 
@@ -104,15 +107,15 @@ function setReminderInterval() {
     reminderInterval = setInterval(() => {
       const today = new Date().toLocaleDateString();
       if (lastReminderSentDate !== today) {
-        console.log('本日まだリマインダーを送信していません。送信を試みます。');
+        console.log("本日まだリマインダーを送信していません。送信を試みます。");
         sendScheduleReminder();
         lastReminderSentDate = today;
       }
     }, 3600000); // 1時間
-    console.log('スケジュールリマインダー機能が有効です。');
+    console.log("スケジュールリマインダー機能が有効です。");
   } else {
     if (reminderInterval) clearInterval(reminderInterval);
-    console.log('スケジュールリマインダー機能は無効です。');
+    console.log("スケジュールリマインダー機能は無効です。");
   }
 }
 
@@ -121,41 +124,46 @@ function setReminderInterval() {
 // ボット起動時の処理
 client.once("clientReady", () => {
   console.log(
-    `${client.user.tag}としてログインしました！AI Agent Hackathonサーバーを盛り上げます！`,
+    `${client.user.tag}としてログインしました！AI Agent Hackathonサーバーを盛り上げます！`
   );
   // リマインダーの初期設定
   setReminderInterval();
 });
 
 // ★★★ スラッシュコマンドの処理 ★★★
-client.on('interactionCreate', async interaction => {
+client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
 
   const { commandName } = interaction;
 
-  if (commandName === 'mute') {
-    const status = interaction.options.getString('status');
-    isMuted = status === 'on';
+  if (commandName === "mute") {
+    const status = interaction.options.getString("status");
+    isMuted = status === "on";
     await interaction.reply({
-      content: `ボットのミュートは現在 ${isMuted ? 'オン' : 'オフ'} です。`,
-      ephemeral: true // コマンド実行者のみに見えるメッセージ
+      content: `ボットのミュートは現在 ${isMuted ? "オン" : "オフ"} です。`,
+      ephemeral: true, // コマンド実行者のみに見えるメッセージ
     });
-  } else if (commandName === 'reminders') {
-    const status = interaction.options.getString('status');
-    remindersEnabled = status === 'on';
+  } else if (commandName === "reminders") {
+    const status = interaction.options.getString("status");
+    remindersEnabled = status === "on";
     setReminderInterval(); // 設定を即時反映
     await interaction.reply({
-      content: `リマインダーは現在 ${remindersEnabled ? 'オン' : 'オフ'} です。`,
-      ephemeral: true
+      content: `リマインダーは現在 ${
+        remindersEnabled ? "オン" : "オフ"
+      } です。`,
+      ephemeral: true,
     });
   }
 });
 
-
 // ★★★ 新規メンバー参加時の処理 ★★★
 client.on("guildMemberAdd", async (member) => {
   // isMutedがtrueでも、この機能は常に動作する
-  const channelId = "1361945715072438323";
+  const channelId = process.env.DISCORD_WELCOME_CHANNEL_ID;
+  if (!channelId) {
+    console.error("ウェルカムメッセージ用のチャンネルIDが設定されていません。");
+    return;
+  }
   const channel = member.guild.channels.cache.get(channelId);
   if (!channel) {
     console.error(`チャンネル ID ${channelId} が見つかりません。`);
@@ -188,14 +196,20 @@ client.on("guildMemberAdd", async (member) => {
 // メッセージ受信時の処理
 client.on("messageCreate", async (message) => {
   // ミュート中は、メンションと自己紹介以外には反応しない
-  if (isMuted && !message.mentions.has(client.user) && message.channel.id !== "1413109378877493338") {
+  const introChannelId = process.env.DISCORD_INTRO_CHANNEL_ID;
+  if (
+    isMuted &&
+    !message.mentions.has(client.user) &&
+    (!introChannelId || message.channel.id !== introChannelId)
+  ) {
     return;
   }
-  
+
   if (message.author.bot) return;
 
   // ★★★ 自己紹介への返信 ★★★
-  if (message.channel.id === "1413109378877493338") {
+  // introChannelId is already defined above
+  if (introChannelId && message.channel.id === introChannelId) {
     try {
       await message.channel.sendTyping();
       const prompt = `
@@ -254,7 +268,7 @@ client.on("messageCreate", async (message) => {
     } catch (error) {
       console.error("Gemini APIとの連携でエラーが発生しました:", error);
       message.reply(
-        "ごめんなさい、AIの頭が少し混乱しているみたいです。もう一度試してみてください。\nもし、ボクがミュートされていたら、メンションだけに答えるようになっているんだな。",
+        "ごめんなさい、AIの頭が少し混乱しているみたいです。もう一度試してみてください。\nもし、ボクがミュートされていたら、メンションだけに答えるようになっているんだな。"
       );
     }
     return;
@@ -324,4 +338,3 @@ app.listen(port, () => {
 
 // Discordにログイン
 client.login(process.env.DISCORD_BOT_TOKEN);
-
