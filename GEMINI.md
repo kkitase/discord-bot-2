@@ -41,7 +41,7 @@ The project is configured for continuous deployment to Google Cloud Run using Cl
 For manual deployment, you can use the following `gcloud` command:
 
 ```bash
-gcloud run deploy discord-bot \
+gcloud run deploy discord-bot-2 \
   --source . \
   --region asia-northeast1 \
   --no-allow-unauthenticated \

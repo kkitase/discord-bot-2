@@ -17,7 +17,9 @@ const client = new Client({
 
 // Gemini APIのクライアント設定
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const modelName = process.env.GEMINI_MODEL || "gemini-2.5-pro";
+const model = genAI.getGenerativeModel({ model: modelName });
+console.log(`Using Gemini model: ${modelName}`);
 
 // ★★★ ボットの状態管理 ★★★
 let isMuted = false;
@@ -123,9 +125,11 @@ function setReminderInterval() {
 
 // ボット起動時の処理
 client.once("clientReady", () => {
-  console.log(
-    `${client.user.tag}としてログインしました！AI Agent Hackathonサーバーを盛り上げます！`
-  );
+  const serverNames = client.guilds.cache.map((guild) => guild.name).join(", ");
+  const serverCount = client.guilds.cache.size;
+  console.log(`${client.user.tag} としてログインしました！`);
+  console.log(`参加サーバー数: ${serverCount}`);
+  console.log(`参加サーバー: ${serverNames}`);
   // リマインダーの初期設定
   setReminderInterval();
 });
