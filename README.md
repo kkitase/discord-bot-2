@@ -169,7 +169,7 @@ gcloud run deploy discord-bot-2 --source . --region asia-northeast1
 
 ### ナレッジベースの更新
 `src/labs/` ディレクトリにセミナー資料を追加するだけで、ボットの知識をアップデートできます。
-`rule.md` には、セミナーのタイムテーブルや基本的なルールを記載してください。
+`labs/overview.md` には、セミナーのタイムテーブルや基本的なルールを記載してください（旧 `rule.md`）。
 
 ---
 

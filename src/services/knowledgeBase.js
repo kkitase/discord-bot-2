@@ -31,13 +31,13 @@ class KnowledgeBaseService {
    */
   async loadRuleMarkdown() {
     try {
-      const rulePath = path.join(PROJECT_ROOT, "rule.md");
+      const rulePath = path.join(PROJECT_ROOT, "labs", "overview.md");
       this.ruleMarkdown = fs.readFileSync(rulePath, "utf8");
-      logger.info("rule.md を読み込みました");
+      logger.info("labs/overview.md (旧 rule.md) を読み込みました");
     } catch (error) {
-      logger.error("rule.md の読み込みに失敗しました", error);
+      logger.error("labs/overview.md の読み込みに失敗しました", error);
       this.ruleMarkdown =
-        "ルールのファイルが読めなかったんだな。ごめんなさいなんだな。";
+        "スケジュールのファイルが読めなかったんだな。ごめんなさいなんだな。";
     }
   }
 
@@ -57,6 +57,9 @@ class KnowledgeBaseService {
       const contentParts = [];
 
       for (const file of files) {
+        // overview.md は Rule として個別に読み込むため、ここではスキップ
+        if (file === "overview.md") continue;
+
         const filePath = path.join(labsDir, file);
         const stat = fs.statSync(filePath);
 
@@ -78,7 +81,9 @@ class KnowledgeBaseService {
       }
 
       this.labsContent = contentParts.join("\n\n---\n\n");
-      logger.info(`labs/ から ${this.labsFiles.length} ファイルを読み込みました`);
+      logger.info(
+        `labs/ から ${this.labsFiles.length} ファイルを読み込みました`
+      );
     } catch (error) {
       logger.error("labs/ ディレクトリの読み込みに失敗しました", error);
     }
