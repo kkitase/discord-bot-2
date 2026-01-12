@@ -1,0 +1,16 @@
+steps:
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      - "run"
+      - "deploy"
+      - "discord-bot-2"
+      - "--source"
+      - "."
+      - "--region"
+      - "asia-northeast1"
+      - "--no-allow-unauthenticated"
+      - "--min-instances=1"
+      - "--update-secrets=DISCORD_BOT_TOKEN=discord-bot-2-token:latest"
+      - "--update-secrets=GEMINI_API_KEY=gemini-api-key-2:latest"
+      - "--update-secrets=DISCORD_CLIENT_ID=discord-bot-2-client-id:latest"
