@@ -73,14 +73,20 @@ async function startBot(config) {
   // ナレッジベースのサマリーをログ出力
   const summary = knowledgeBase.getSummary();
   logger.info(
-    `ナレッジベース: rule.md (${summary.ruleMarkdownLength}文字), labs/ (${summary.labsFilesCount}ファイル, ${summary.labsContentLength}文字)`
+    `ナレッジベース: rule.md (${summary.ruleMarkdownLength}文字), labs/ (${summary.labsFilesCount}ファイル, ${summary.labsContentLength}文字)`,
   );
 
   // サービス初期化
   const geminiService = new GeminiService(
     config.geminiApiKey,
-    config.geminiModel
+    config.geminiModel,
   );
+
+  // Context Cache の初期化
+  const knowledgeContent = knowledgeBase.getAllKnowledge();
+  if (knowledgeContent) {
+    await geminiService.initializeCache(knowledgeContent);
+  }
 
   // 状態オブジェクト
   const state = {
@@ -102,7 +108,7 @@ async function startBot(config) {
     state,
     services,
     config,
-    knowledgeBase.getAllKnowledge()
+    knowledgeBase.getAllKnowledge(),
   );
 
   // ヘルスチェックサーバー起動

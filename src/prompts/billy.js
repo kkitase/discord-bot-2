@@ -8,6 +8,18 @@ const BREVITY_RULE = "【一番大事なこと】3行以内で、短く元気に
 const SPIRIT = "「一緒に頑張ろう！」の精神だよ！";
 
 /**
+ * システム指示（Context Cache 用の共通命令）
+ * @returns {string} システム指示
+ */
+function systemInstruction() {
+  return `
+${PERSONA}
+${BREVITY_RULE}
+${SPIRIT}
+  `.trim();
+}
+
+/**
  * 新規メンバーウェルカム用プロンプト
  * @param {string} memberId - メンバーのDiscord ID
  * @returns {string} プロンプト
@@ -102,4 +114,5 @@ module.exports = {
   introResponse,
   mentionResponse,
   randomEncouragement,
+  systemInstruction,
 };

@@ -4,6 +4,7 @@
  */
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleAICacheManager } = require("@google/generative-ai/server");
 const logger = require("../utils/logger");
 const prompts = require("../prompts/billy");
 
@@ -14,9 +15,48 @@ class GeminiService {
    */
   constructor(apiKey, modelName) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: modelName });
+    this.cacheManager = new GoogleAICacheManager(apiKey);
     this.modelName = modelName;
-    logger.info(`Geminiモデルを初期化: ${modelName}`);
+    this.cacheName = null;
+    this.cachedModel = null;
+    logger.info(`Geminiモデル初期化準備 (モデル: ${modelName})`);
+  }
+
+  /**
+   * ナレッジベースをキャッシュに登録
+   * @param {string} knowledgeContent - キャッシュするナレッジベースの内容
+   * @param {string} ttlSeconds - キャッシュの有効期間（秒）
+   */
+  async initializeCache(knowledgeContent, ttlSeconds = 3600) {
+    try {
+      logger.info("Context Cache を作成しています...");
+
+      const cache = await this.cacheManager.create({
+        model: this.modelName,
+        displayName: "handson_knowledge_base",
+        systemInstruction: prompts.systemInstruction(), // システム指示もキャッシュに含める
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: knowledgeContent }],
+          },
+        ],
+        ttlSeconds: ttlSeconds,
+      });
+
+      this.cacheName = cache.name;
+      this.cachedModel = this.genAI.getGenerativeModelFromCachedContent(cache);
+
+      logger.info(`Context Cache が作成されました: ${this.cacheName}`);
+      return this.cacheName;
+    } catch (error) {
+      logger.error(
+        "Context Cache の作成に失敗しました。通常の生成にフォールバックします。",
+        error,
+      );
+      this.model = this.genAI.getGenerativeModel({ model: this.modelName });
+      return null;
+    }
   }
 
   /**
@@ -25,7 +65,12 @@ class GeminiService {
    * @returns {Promise<string>} 生成されたテキスト
    */
   async generateContent(prompt) {
-    const result = await this.model.generateContent(prompt);
+    // キャッシュがある場合は cachedModel を、ない場合は通常の model を使用
+    const targetModel =
+      this.cachedModel ||
+      this.model ||
+      this.genAI.getGenerativeModel({ model: this.modelName });
+    const result = await targetModel.generateContent(prompt);
     const response = result.response;
     return response.text();
   }
