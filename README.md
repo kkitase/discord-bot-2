@@ -43,7 +43,6 @@ graph TB
         end
     end
 
-    subgraph External ["External Services"]
         direction LR
         G_AI["Google Gemini API"]
         G_SM["Secret Manager"]
@@ -169,8 +168,6 @@ gcloud run deploy discord-bot-2 --source . --region asia-northeast1
 
 ### ナレッジベースの更新
 `src/labs/` ディレクトリにセミナー資料を追加するだけで、ボットの知識をアップデートできます。
-`labs/overview.md` には、セミナーのタイムテーブルや基本的なルールを記載してください（旧 `rule.md`）。
-
 ---
 
 ## 📄 ライセンス
