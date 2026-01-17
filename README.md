@@ -1,16 +1,18 @@
-# ビリー隊長: ハンズオンサポート Discord Bot
+![billy_captain_miyabi_header](header.png)
 
-> 「一緒に頑張ろう！💪」 --- ハンズオンを熱血指導で支える、AIアシスタント。
+# ビリー隊長: 雅なるハンズオンサポート Discord Bot
 
-## 概要
+> 「共に高みを目指そうぞ！🌸」 --- 重力から解放された熱き指導。
 
-**ビリー隊長**は、ハンズオンセミナーの参加者をサポートするために設計された Discord ボットです。Google Cloud の Gemini API を活用し、手元の資料（PDF、Markdown）に基づいた正確で熱血なアドバイスを提供します。
+## 🌙 概要
+
+**ビリー隊長**は、ハンズオンセミナーの参加者を雅に、かつ熱くサポートするために生まれた AI アシスタントです。Google Cloud の最新鋭モデル **Gemini 3 Flash Preview** と **Context Caching** 技術を駆使し、膨大な資料から瞬時に正解を導き出します。
 
 ---
 
-## � システムアーキテクチャ
+## 🏛️ システムアーキテクチャ
 
-本ボットは Google Cloud Run 上で動作し、コンテナ起動時にローカル資料をインデックス化します。ユーザーからのインタラクションに対し、Gemini 3 Pro が適切な文脈を判断して応答します。
+Google Cloud Run 上で動作し、**Context Caching** を活用してナレッジベースを効率的に管理します。質問のたびに資料を読み直す必要がなく、極めて高速な応答を実現しています。
 
 ```mermaid
 graph TB
@@ -28,7 +30,6 @@ graph TB
         subgraph Core ["Service Logic"]
             Entry["index.js / bot.js"]
             H_Event["Event Handlers"]
-            C_Loader["Command Loader"]
         end
 
         subgraph Brain ["Gemini AI Integration"]
@@ -37,142 +38,93 @@ graph TB
             P_Billy["Billy Persona Prompt"]
         end
 
+        subgraph Context_Layer ["Context Caching"]
+            Cache["GoogleAICacheManager"]
+            Cached_Data["Cached Knowledge & Persona"]
+        end
+
         subgraph Local_Storage ["Container FS"]
             F_Docs["labs/*.md, *.pdf"]
-            F_Rule["rule.md"]
+            F_Rule["overview.md"]
         end
     end
 
+    subgraph Google_Cloud ["Google Cloud API"]
         direction LR
-        G_AI["Google Gemini API"]
+        G_AI["Gemini 3 Flash Preview"]
         G_SM["Secret Manager"]
     end
 
     %% --- Sequence Flow ---
 
-    %% 1. Startup
+    %% 1. Startup & Caching
     Entry -- "1. Load Secrets" --> G_SM
     Entry -- "2. Scan & Parse" --> F_Docs
-    Entry -- "3. Register" --> Discord_Gateway
+    Entry -- "3. Register Cache" --> S_Gemini
+    S_Gemini -- "4. Create Context Cache" --> G_AI
+    G_AI -- "5. Cache Name" --> S_Gemini
 
     %% 2. Interaction
-    U -- "4. Mention / Command" --> Events
-    Events -- "5. Trigger" --> H_Event
+    U -- "6. Mention / Command" --> Events
+    Events -- "7. Trigger" --> H_Event
 
-    %% 3. AI Process (RAG)
-    H_Event -- "6. Query Context" --> S_KB
-    S_KB -- "7. Fetch Relevant Info" --> F_Docs
-    S_KB -- "7. Fetch Relevant Info" --> F_Rule
-    
-    H_Event -- "8. Compose Prompt" --> P_Billy
-    H_Event -- "9. Request (Persona + Context + Message)" --> S_Gemini
-    S_Gemini -- "10. Generation" --> G_AI
+    %% 3. AI Process (Cached)
+    H_Event -- "8. Request (Query + CacheName)" --> S_Gemini
+    S_Gemini -- "9. Fast Generation" --> G_AI
     
     %% 4. Response
-    G_AI -- "11. Result" --> S_Gemini
-    S_Gemini -- "12. Final Answer" --> H_Event
-    H_Event -- "13. Reply (Thread)" --> Events
-    Events -- "14. Notification" --> U
+    G_AI -- "10. Result" --> S_Gemini
+    S_Gemini -- "11. Final Answer" --> H_Event
+    H_Event -- "12. Reply (Thread)" --> Events
+    Events -- "13. Notification" --> U
 
     %% --- Styling ---
-    style U fill:#ff9,stroke:#333,stroke-width:2px
-    style G_AI fill:#4285F4,stroke:#fff,stroke-width:2px,color:#fff
-    style G_SM fill:#34A853,stroke:#fff,stroke-width:2px,color:#fff
-    style Bot_Instance fill:#f9f9f9,stroke:#666,stroke-width:2px
-    style Brain fill:#e1f5fe,stroke:#01579b
-    style Core fill:#fff9c4,stroke:#fbc02d
+    style U fill:#fff9c4,stroke:#333
+    style G_AI fill:#4285F4,stroke:#fff,color:#fff
+    style Context_Layer fill:#e1f5fe,stroke:#01579b
+    style Bot_Instance fill:#f9f9f9,stroke:#666
 ```
 
 ---
 
-## �🌸 主な機能
+## 💠 主な特長
 
-### 1. 熱血メンション応答
-`@ビリー隊長` で呼びかけると、Gemini がスレッドを立てて回答します。既存の資料（`labs/` フォルダ）を熟知しているため、具体的な手順まで教えてくれます。
+### 1. 瞬速の Context Caching
+Gemini 1.5/3 の **Context Caching** を導入。32kトークンを超える大規模なハンズオン資料も、一度キャッシュすれば次回以降は爆速で回答します。
 
-### 2. インコンテキスト・ナレッジ
-`labs/` フォルダに資料を置くだけで、ボットがそれを学習します。
-- **対応形式**: Markdown (`.md`), Plain Text (`.txt`), PDF (`.pdf`)
-- **動的パース**: PDF 内容も自動でテキスト化して参照します。
+### 2. 雅なる「ビリースタイル」
+「熱血」と「和」が融合した独自のペルソナ。参加者を励まし、共に歩む姿勢を崩しません。
 
-### 3. 個別歓迎・自己紹介応答
-新しいメンバーが参加したときや、自己紹介チャンネルに投稿があったとき、一人ひとりに熱いメッセージを届けます。
-
-### 4. 詳細な機能制御 (`/config`)
-ボットの振る舞いを細かくカスタマイズできます。
-- `/config` コマンドで「メンション応答」「ウェルカムメッセージ」「自己紹介返信」「相槌・リアクション」を個別に ON/OFF 可能。
+### 3. マルチモーダル・ナレッジ
+`labs/` 内の Markdown, Text はもちろん、**PDF** も自動でパースして知識として取り込みます。
 
 ---
 
-## 🛠 スラッシュコマンド
+## 🛠️ スラッシュコマンド
 
-ボットの機能を直感的に操作できるスラッシュコマンドを提供しています。
-
-| コマンド | 説明 |
+| コマンド | 内容 |
 |----------|------|
-| `"/config:mention stauts:on/off"` | メンション時のみ反応するモードの切り替え |
-| `"/config:welcome stauts:on/off"` | 新規入隊者へのウェルカムメッセージ |
-| `"/config:intro stauts:on/off"` | 自己紹介チャンネルへの熱血レスポンス |
-| `"/config:reaction stauts:on/off"` | 普段の会話へのランダムな相槌・リアクション |
-| `"/config"` | 現在の設定を一覧表示 |
-
-### `/config` オプション詳細
-
-設定を変更する際は、以下の組み合わせで実行してください。
-
-| `feature` (機能名) | `stauts` (状態) | 内容 |
-|-------------------|----------------|------|
-| `mention` | `on` / `off` | メンション応答設定 |
-| `welcome` | `on` / `off` | ウェルカムメッセージ設定 |
-| `intro` | `on` / `off` | 自己紹介返信設定 |
-| `reaction` | `on` / `off` | 相槌・リアクション設定 |
-
-**実行例:**
-- `/config` (現在の設定を一覧表示)
-- `/config feature:mentions status:off` (メンション応答を一時停止)
-
+| `"/config"` | 動作モードを雅に調整（メンション、ウェルカム、相槌など） |
+| `"/status"` | キャッシュ状態やナレッジベースの統計を表示 |
 
 ---
 
-## 🚀 セットアップ
+## 🚀 はじめかた
 
-### 必要条件
-- Node.js v18.0 以上
-- Google Cloud Gemini API キー
-- Discord Bot トークン & クライアント ID
-
-### ローカル開発
-1. 依存関係のインストール
-   ```bash
-   npm install
-   ```
-2. 環境変数の設定
-   `.env.example` を `.env` にコピーし、必要事項を記入します。
-3. スラッシュコマンドの登録
-   ```bash
-   npm run deploy
-   ```
-4. ボットの起動
-   ```bash
-   npm start
-   ```
-
-### ☁️ Cloud Run へのデプロイ
+### 1. 水（依存関係）を引く
 ```bash
-gcloud run deploy discord-bot-2 --source . --region asia-northeast1
+npm install
+```
+
+### 2. 言の葉（環境変数）を綴る
+`.env` に `GEMINI_API_KEY`, `DISCORD_BOT_TOKEN`, `GEMINI_MODEL=gemini-3-flash-preview` を設定。
+
+### 3. 開陣（起動）
+```bash
+npm run deploy  # コマンド登録
+npm start       # 出陣！
 ```
 
 ---
 
-## 📂 構成とナレッジベース
-
-### ナレッジベースの更新
-`src/labs/` ディレクトリにセミナー資料を追加するだけで、ボットの知識をアップデートできます。
----
-
-## 📄 ライセンス
-ISC License
-
----
-
-*Presented by Sunwood AI Labs*
+*Presented with Miyabi Passion by Sunwood AI Labs*
